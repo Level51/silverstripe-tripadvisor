@@ -1,0 +1,12 @@
+---
+Name: tripadvisor
+After: 'framework/*','cms/*'
+---
+TripAdvisorAPI:
+  Endpoint: 'http://api.tripadvisor.com/api/partner/2.0/'
+SiteConfig:
+  extensions:
+    - TripAdvisorConfig
+CMSSettingsController:
+  extensions:
+    - ExtendedConfigActions
