@@ -16,10 +16,23 @@ class TripAdvisorLocation extends DataObject {
         'NumReviews' => 'Int'
     );
 
+    private static $has_many = array(
+        'Reviews' => 'TripAdvisorReview'
+    );
+
+    /**
+     * Returns in the currently synced profile record.
+     * @return DataObject
+     */
     public static function current() {
         return TripAdvisorLocation::get()->first();
     }
 
+    /**
+     * Ensures that there can only be one record at a time.
+     * @param null $member
+     * @return bool
+     */
     public function canCreate($member = null) {
         return !TripAdvisorLocation::get()->first();
     }

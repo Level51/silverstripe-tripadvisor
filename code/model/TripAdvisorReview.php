@@ -20,4 +20,8 @@ class TripAdvisorReview extends DataObject {
         'User' => 'Varchar',
         'Title' => 'Varchar'
     );
+
+    private static $has_one = array(
+        'Location' => 'TripAdvisorLocation'
+    );
 }

@@ -18,32 +18,55 @@ class TripAdvisorService extends RestfulService {
             60 * 60 * 24);
     }
 
-    public function getLocationProfile($forceRefresh = false, $setRefresh = true) {
-        if($forceRefresh) {
-            TripAdvisorLocation::get()->removeAll();
-            TripAdvisorReview::get()->removeAll();
-            return $this->fetchProfile($setRefresh);
-        } else
-            return TripAdvisorLocation::get()->first();
+    /**
+     * Return the location profile record.
+     * @param bool|false $forceRefresh
+     * @return DataObject
+     */
+    public function getLocationProfile($forceRefresh = false) {
+        if($forceRefresh)
+            $this->dropProfile(true);
+
+        return TripAdvisorLocation::current();
     }
 
-    public function getReviews($forceRefresh = false, $setRefresh = true) {
-        if($forceRefresh) {
-            TripAdvisorLocation::get()->removeAll();
-            TripAdvisorReview::get()->removeAll();
-            $this->fetchProfile();
-        }
+    /**
+     * Return the (three) latest reviews.
+     * The TripAdvisor API is designed to return the three most recent reviews in detail.
+     * @param bool|false $forceRefresh
+     * @return DataList
+     */
+    public function getReviews($forceRefresh = false) {
+        if($forceRefresh)
+            $this->dropProfile(true);
 
-        return TripAdvisorReview::get($setRefresh);
+        return TripAdvisorReview::get();
     }
 
-    private function fetchProfile($setRefresh = true) {
+    /**
+     * Drops all current TripAdvisor payload data (not API key, not location ID).
+     * @param bool|false $refetch
+     */
+    private function dropProfile($refetch = false) {
+        TripAdvisorLocation::get()->removeAll();
+        TripAdvisorReview::get()->removeAll();
+
+        if($refetch) $this->fetchProfile();
+    }
+
+    /**
+     * Calls the TripAdvisor API via cURL and creates payload records.
+     * @return mixed|RestfulService_Response
+     * @throws ValidationException
+     * @throws null
+     */
+    private function fetchProfile() {
         // Set key as query param
         $this->setQueryString(array(
             'key' => SiteConfig::current_site_config()->TripAdvisorApiKey
         ));
 
-        // Request location endpoint
+        // Request location endpoint due to API specification
         $response = $this->request('location/' . SiteConfig::current_site_config()->TripAdvisorLocationID);
 
         // Check if there was an error
@@ -52,11 +75,9 @@ class TripAdvisorService extends RestfulService {
             $response = json_decode($response->getBody());
 
             // Set update flag and save
-            if($setRefresh) {
-                $sC = SiteConfig::current_site_config();
-                $sC->TripAdvisorLastUpdate = SS_Datetime::now()->getValue();
-                $sC->write();
-            }
+            $sC = SiteConfig::current_site_config();
+            $sC->TripAdvisorLastUpdate = SS_Datetime::now()->getValue();
+            $sC->write();
 
             // Create profile
             $l = new TripAdvisorLocation();
@@ -72,6 +93,7 @@ class TripAdvisorService extends RestfulService {
 
             // Loop over review array
             foreach($response->reviews as $review) {
+                // Create review record
                 $r = new TripAdvisorReview();
                 $r->ID = $review->id;
                 $r->Created = SS_Datetime::now()->getValue();
@@ -86,6 +108,9 @@ class TripAdvisorService extends RestfulService {
                 $r->User = $review->user->username;
                 $r->Title = $review->title;
                 $r->write();
+
+                // Add to profile
+                $l->Reviews()->add($r);
             }
         } else {
             $r = json_decode($response->getBody());
@@ -105,7 +130,7 @@ class TripAdvisorService extends RestfulService {
         $err_msg = $response;
 
         if(strpos($err_msg, '<') === false) {
-            user_error("TripAdvisor Service Error : $err_msg", E_USER_ERROR);
+            Debug::friendlyError(500, "TripAdvisor Service Error : $err_msg");
         }
 
         return $response;

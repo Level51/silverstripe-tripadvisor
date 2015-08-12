@@ -1,5 +1,6 @@
 {
   "name": "level51/silverstripe-tripadvisor",
+  "version": "0.1.0",
   "description": "Simple integration of TripAdvisor location profiles and reviews for SilverStripe.",
   "type": "silverstripe-module",
   "authors": [

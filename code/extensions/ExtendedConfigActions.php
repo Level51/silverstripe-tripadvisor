@@ -7,6 +7,14 @@
  * Time: 21:08
  */
 class ExtendedConfigActions extends Extension {
+    /**
+     * Loads the contents of the specified location.
+     * @param $data
+     * @param $form
+     * @return mixed
+     * @throws ValidationException
+     * @throws null
+     */
     public function loadProfile($data, $form) {
         // Set update flag and save
         $sC = SiteConfig::current_site_config();
@@ -18,7 +26,7 @@ class ExtendedConfigActions extends Extension {
         $service = new TripAdvisorService();
 
         // Delete old data and fetch new
-        $service->getLocationProfile(true, false);
+        $service->getLocationProfile(true);
 
         // Set response
         $this->owner->response->addHeader('X-Status', rawurlencode(_t('ExtendedConfigActions.SYNCED_PROFILE', 'Synced TripAdvisor profile "{location}".', null, array(
